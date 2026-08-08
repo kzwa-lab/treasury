@@ -6,7 +6,7 @@ const connectionString = process.env.PG_TEST_URL;
 
 describe.runIf(connectionString !== undefined)("PostgresBitemporalStore", () => {
   it("round-trips a backdated correction along both axes", async () => {
-    const pool = new Pool(connectionString!);
+    const pool = new Pool({ connectionString: connectionString! });
     try {
       const table = "bitemporal_test";
       await pool.query(`DROP TABLE IF EXISTS "${table}"`);
