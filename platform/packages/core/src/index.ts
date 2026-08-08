@@ -8,6 +8,7 @@ export * from "./model/position.js";
 export * from "./model/valuation.js";
 export * from "./model/events.js";
 export * from "./store/bitemporal.js";
+export * from "./store/pg/bitemporal.js";
 export * from "./classification/dimensions.js";
 export * from "./classification/rules.js";
 export * from "./classification/engine.js";
