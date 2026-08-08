@@ -808,7 +808,7 @@ author a versioned rule set that an early-phase module executes.
 | **1 Liquidity** | D10 ladder, LCR, NSFR, HQLA, concentration; D13 factor rule sets; D15 regeneration test | Daily regulatory liquidity ratios | Build |
 | **2 Valuation** | D8 pricing, curves, sensitivities, `exposure_by_bucket` | Independent valuation, daily P&L | **Buy the pricing library** |
 | **3 ALM & IRRBB** | D9 gap/EVE/NII, behavioural models, D14 scenarios, internal liquidity metrics | ALCO pack, IRRBB, internal stress view | Build the framework; own the models |
-| **4 Front-to-back** | D4, D5, full D6, D7, limit framework, **D11 counterparty carve-out** | Treasury as system of record; STP | **Mostly buy — a buy-evaluation contract, not a build spec** |
+| **4 Front-to-back** | D4, D5, full D6, D7 — **bought**. Built regardless: the **limit framework**, **D11's counterparty carve-out**, the **D6 register handover** (§3.2) | Treasury as system of record; STP | **Mostly buy** — a buy-evaluation contract and a procurement workplan, not a build spec |
 | **5 Risk** | D11 VaR/ES, stressed VaR, attribution, backtesting, PFE, full XVA | Full market and counterparty risk | Buy the analytics |
 | **6 FTP & Regulatory** | D12, D13 full returns engine | Business-unit performance, regulatory submission | Build |
 | **7 Governance** | **D15 aggregate model risk** — inventory-wide reporting, risk appetite, model provenance | Audit and regulator ready | Build |
@@ -838,7 +838,41 @@ it delivers operational efficiency rather than new insight.
 for the pricing library, because reproducibility requires running a decade-old vendor build; and
 **raw quotes rather than derived factors** when buying market data history.
 
-## 3. Phase 0 execution — sixteen tickets in six waves
+## 3. The delivery plan across all seven stages
+
+**112 discrete pieces of work.** Each stage is cut into waves, and **each wave leaves the platform in a
+working state** — not a partially built one.
+
+| Stage | Pieces | Note |
+|---|---|---|
+| **0. Foundation** | 16 | Detailed in §3.1 |
+| **1. Liquidity** | 16 | **Does not finish liquidity** — see below |
+| **2. Valuation** | 16 | Spine is the library procurement, not a build |
+| **3. ALM & IRRBB** | 16 | Gated by the CSRBB scope decision |
+| **4. Front-to-back** | **8** | **Carve-outs only** — the rest is a procurement, §3.2 |
+| **5. Risk** | 16 | Excludes the counterparty measures carved out to Phase 4 |
+| **6. FTP & Regulatory** | 16 | Cannot be sized without the returns inventory |
+| **7. Governance** | **8** | **Deliberately the smallest — see below** |
+
+**Every stage ends with an operational readiness item** — parallel running, cutover, rollback, training
+and operational acceptance. These were added after an internal critique found 97 build tickets with no
+cutover or acceptance anywhere in the programme. The omission is worth recording, because it is the
+normal way a technically successful programme disappoints its users.
+
+**Stage 7 being smallest is a design achievement, not an omission.** The review found model governance
+scheduled at the end — meaning that for six years models would produce numbers the bank relied on with
+nobody having approved them, and the governance function would inherit a portfolio it had never seen.
+Approval and validation now happen in every stage, as each model is built. What remains at Stage 7 is
+the portfolio view — *how much of what we report rests on models we have not validated* — which
+genuinely cannot be built until there is a portfolio to look at. **Two of its eight items are checks
+that the correction held.**
+
+**Stage 1 does not finish liquidity.** It delivers the *regulator's* ratios, which are computable from
+prescribed rules. The bank's *own* view of what would happen under stress needs behavioural models and
+arrives at Stage 3. Stated plainly because the alternative reading — "liquidity is done" — would be
+wrong for two years.
+
+### 3.1 Stage 0 execution — sixteen tickets in six waves
 
 | Wave | Tickets | State at the end |
 |---|---|---|
@@ -919,9 +953,9 @@ the engine ships empty without it.
 
 **P0-06 is the largest and highest-uncertainty ticket.** It carries rules-as-data with bitemporality,
 precedence, explainability, impact simulation, the fifteenth dimension, the CRM substitution split and
-**a second customer-aggregation pass** (§3.1 below).
+**a second customer-aggregation pass** (§3.1.1 below).
 
-### 3.1 Classification runs in two passes
+#### 3.1.1 Classification runs in two passes
 
 **Part of regulatory classification is irreducibly customer-level.** Deposit insurance coverage is a
 per-**depositor** threshold; operational deposit status is **capped at the amount required for the
@@ -942,7 +976,7 @@ Pass 2   customer aggregation → threshold and cap computation → allocation b
 
 **This does not undercut contract-level storage**, which remains necessary but is not sufficient.
 
-### 3.2 Recompute triggers
+#### 3.1.2 Recompute triggers
 
 Classification changes without anything happening to the contract. Seven triggers, of which two are
 routinely missed:
@@ -957,7 +991,44 @@ Plus counterparty static change, ECL stage migration, management decision, **rul
 default of "banking book" or "amortised cost" makes the batch run clean and produces a balance sheet that
 is confidently wrong. An unclassified line is ugly, and being ugly is its function.
 
-## 4. Three clocks running now, independent of funding
+### 3.2 Stage 4 is a procurement, and only its carve-outs are planned
+
+**Breaking Stage 4 into build tasks would pre-empt the buy decision.** Writing several thousand build
+requirements for software the bank would prefer to purchase is wasted effort and a strong institutional
+bias toward building it anyway. What exists instead is a **buy-evaluation contract** — what a candidate
+must satisfy, which requirements are pass/fail, and how a supplier's claim is converted into evidence
+rather than accepted as a claim — plus a **procurement workplan** covering lots, calendar, decision
+rights and stop conditions.
+
+**Three pieces are built regardless of the outcome**, and they are the eight tickets in the Stage 4 count:
+
+| Carve-out | Why it is not in a lot |
+|---|---|
+| **The limit framework** | Marked Build because no vendor sells the shape — limits spanning treasury positions, banking book measures and counterparty exposure, evaluated **pre-deal** |
+| **The counterparty carve-out** | Current exposure, SA-CCR, a simplified netting-set CVA and settlement exposure. Rests on Stage 0–2 foundations, not on the package or on Stage 5's simulation |
+| **The collateral register handover** | Full collateral management arrives around a register that has been in production for two or three years. The handover is inheritance, not installation |
+
+**All three can be built during the procurement.** None depends on the vendor, the lots or the contract,
+and the procurement runs roughly nine to twelve months from gate to signature. Two consequences:
+
+- **It de-risks the stage the programme names as its principal risk** by shortening what remains after
+  signature
+- **It strengthens the fallback.** One stop condition is *"cost exceeds the build estimate"* — a limit
+  framework and a counterparty exposure engine already built are cost removed from that alternative,
+  priced rather than estimated
+
+**Two things the carve-out set deliberately excludes:** package implementation, which cannot be written
+without presupposing the award; and the deal capture and settlement module specifications, which become
+necessary only if the buy fails.
+
+**Two failure modes the carve-out tickets exist to prevent.** A pre-deal check that is not on the booking
+path is decoration — if the package books first and checks after, the framework detects breaches instead
+of preventing them, which a post-deal report already does. And **the register must remain the system of
+record with the package publishing into it**: inverting that loses the bitemporal history, degrades the
+intraday classification trigger to a batch file, and **restarts the 24-month liquidity look-back** — a
+loss invisible in the ratio itself, which simply reports a smaller maximum and a better number.
+
+## 4. Four clocks running now, independent of funding
 
 **Each loses value permanently for every month deferred. None depends on the platform.**
 
@@ -965,20 +1036,41 @@ is confidently wrong. An unclassified line is ugly, and being ugly is its functi
 |---|---|---|
 | **Collateral movement history** | One month of the 24-month LCR look-back, permanently. Statement retrieval ages from self-service into archive request | **Log forward** (7 fields, named daily owner) · **reconstruct backward** from nostro, counterparty and custodian statements · **proxy the residual** conservatively |
 | **Legal agreement extraction** | Lead time against a **Phase 2** need | Structured extraction across tiers 1, 2 and 4 of the counterparty population |
-| **Market data history** | Nothing — **but this is the only one money can fix** | Buy a vendor history set; raw quotes, not derived factors |
-
-**Plus interim rule authorship** — a Phase 0 staffing line, not a software task.
+| **Market data history** | Nothing — **but this is the only one money can fix** | Buy a vendor history set; **raw quotes, not derived factors** |
+| **FTP methodology** | **The only recoverable one** — the inputs survive, the decision does not | Settle at Stage 4. Deferring means Stage 6 applies a newly chosen methodology backwards to two years of booked business, restating business unit performance for periods already reported |
 
 **The collateral and legal exercises share a population and should be run as one workstream** with
 separate tracks: statement requests issue on **day one for everyone**, agreement extraction proceeds in
 tier order. The saving is coordination and relationship overhead, not extraction effort.
 
+### 4.1 Seven pieces of work no engineer can do
+
+**The binding constraint is subject-matter capacity, not engineering capacity**, and the detailed plan
+quantifies it: seven of the pieces of work sit on the critical path and cannot be done by the build team.
+
+| Work | Who | Blocks |
+|---|---|---|
+| Accounting and regulatory classification rules | Finance and regulatory reporting | **Stage 0.** The platform classifies every position by these; without them it computes nothing |
+| Prescribed liquidity factors | Regulatory reporting | **Stage 1.** The ratio engine ships empty |
+| Ownership of the market risk conventions | Risk, as a named interim role | **Stage 1 — but its deadline belongs to Stage 2.** The conventions must be settled *before the valuation library is bought*, because the supplier's conventions are part of what is purchased. **The tightest deadline in the programme and the least obvious owner** |
+| Supplier contract terms — retention, escrow, extractability | Procurement and Legal | **Stage 2.** Long-term rights that cannot be added later, from a position of dependency |
+| Transfer pricing methodology | Finance with ALCO | Stage 4, used at Stage 6 |
+| Regulatory return inventory | Regulatory reporting | **Stage 6.** The build cannot be sized without the list |
+| Model validation resourcing | Executive — budget and hiring | **Every stage from 2 onward** |
+
+**None can be accelerated by adding engineers, and each has a lead time measured in months.** They
+should be resourced and started on their own schedule, ahead of the engineering that depends on them.
+
+**Legal agreement extraction is an eighth item of the same kind**, sitting outside the numbered work
+because it is a legal review rather than a platform task.
+
 ---
 
 # PART VII — DECISIONS REGISTER
 
-Thirty-two outstanding decisions. **None is engineering work.** Subject-matter capacity, not engineering
-capacity, is the programme's most likely cause of delay.
+**38 decisions gate the stages, and they are the programme's real critical path.** None is engineering
+work. Most are routine and belong to management; those below are the ones the Board or its committees
+must take, or where deferral has a consequence the Board should see.
 
 ## 1. The four that go first
 
@@ -1219,11 +1311,14 @@ This whitepaper consolidates the following. Each remains authoritative for its o
 | `taxonomy-policy-decisions` | The accounting policy resolutions in Appendix B |
 | `eod-window-and-degradation` | The operational contract in Part IV §5–6 |
 | `counterparty-documentation-workstream` · `statement-request-pack` | The pre-build clocks in Part VI §4 |
-| `phase4-front-to-back-buy-evaluation` | Phase 4 as a procurement contract |
-| `tickets` · `tickets-phase2` · `tickets-phase5` · `tickets-phase7` | Executable ticket sets |
+| `phase4-front-to-back-buy-evaluation` | What a candidate front-to-back system must satisfy |
+| `phase4-procurement-workplan` | Lots, calendar, decision rights, waiver rule and stop conditions |
+| `gl-interface-decision` | GL authority and posting interface granularity |
+| `tickets` · `tickets-phase1` … `tickets-phase7` | **Eight executable ticket sets — 112 pieces of work.** `tickets-phase4` covers the build carve-outs only |
 | `decisions-register` · `phase-breakdown-readiness` | Part VII in full |
-| `architecture-critique` | The adversarial review that reshaped the design |
-| `executive-summary` | Board and ALCO summary |
+| `architecture-critique` · `phase-breakdown-critique` | The adversarial reviews that reshaped the design and the plan |
+| `blueprint-amendment-protocol` | How seven agents amended one blueprint without collisions |
+| `executive-summary` · `programme-delivery-summary` | Board and ALCO summaries — *what and why*, then *how it will be delivered* |
 
 ---
 
